@@ -1,12 +1,13 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import altair as alt
 
 st.title('Uber pickups in NYC')
 
 DATE_COLUMN = 'date/time'
 DATA_URL = ('https://s3-us-west-2.amazonaws.com/'
-         'streamlit-demo-data/uber-raw-data-sep14.csv.gz')
+            'streamlit-demo-data/uber-raw-data-sep14.csv.gz')
 
 # 데이터 불러오기
 def load_data(nrows):
@@ -15,7 +16,6 @@ def load_data(nrows):
     data.rename(lowercase, axis='columns', inplace=True)
     data[DATE_COLUMN] = pd.to_datetime(data[DATE_COLUMN])
     return data
-
 
 # 텍스트 요소 생성. 사용자에게 데이터가 로드 되고 있음을 알린다.
 data_load_state = st.text('Loading data...')
@@ -29,3 +29,18 @@ data_load_state.text('Loading data...done!')
 # 부제목 만들기
 st.subheader('Raw data')
 st.write(data)
+
+# Hour 별 픽업 수 계산
+data['hour'] = data[DATE_COLUMN].dt.hour
+hist_values = np.histogram(data['hour'], bins=24, range=(0,24))[0]
+
+# Altair를 사용하여 히스토그램 그리기
+st.subheader('Number of pickups by hour')
+chart_data = pd.DataFrame({'hour': range(24), 'pickups': hist_values})
+
+chart = alt.Chart(chart_data).mark_bar().encode(
+    x=alt.X('hour', title='Hour of day'),
+    y=alt.Y('pickups', title='Number of pickups')
+)
+
+st.altair_chart(chart, use_container_width=True)
